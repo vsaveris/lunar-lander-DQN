@@ -36,7 +36,7 @@ Python Version: 3.6
 
 
 #My classes
-import emulator
+import emulator as em
 import deepNeuralNetwork
 import deepQNetwork
 
@@ -153,7 +153,7 @@ def trial(model_file_name, scenario, number_of_trials, rendering = False, graphs
             The saved trained DQN (Keras DNN h5 file).
             
         scenario: string 
-            The OpenAI gym scenario to be loaded by the rlEmulator.
+            The OpenAI gym scenario to be loaded by the Emulator.
             
         number_of_trials: int
             How many trials to execute.
@@ -186,8 +186,8 @@ def trial(model_file_name, scenario, number_of_trials, rendering = False, graphs
     #Import Numpy for the trial
     import numpy as np
 
-    #Create a rlEmulator object instance (without a seed)
-    emulator = rlEmulator.RLEmulator(scenario = scenario, average_reward_episodes = number_of_trials, statistics = True, 
+    #Create a Emulator object instance (without a seed)
+    emulator = em.Emulator(scenario = scenario, average_reward_episodes = number_of_trials, statistics = True, 
                rendering = rendering, seed = None, verbose = verbose)
     
     #Create a Deep Neural Network object instance and load the trained model (model_file_name)
@@ -211,33 +211,6 @@ def trial(model_file_name, scenario, number_of_trials, rendering = False, graphs
     if verbose > C_VERBOSE_NONE:
         print('\nDQN ', str(number_of_trials), ' trials average = ', emulator.execution_statistics.values[-1,3], ', in ', 
           executionTimeToString(time.time() - start_time), sep = '')
-    
-    #Create Graphs
-    # 1. Reward per Trial
-    plt.plot(emulator.execution_statistics.values[:,0], emulator.execution_statistics.values[:,2], color = 'coral',  
-             linestyle = '-', label = 'Trial Total Reward')
-    plt.plot(emulator.execution_statistics.values[:,0], emulator.execution_statistics.values[:,3], color = 'midnightblue',
-             linestyle = '--', label = 'Trials Reward Average')
-    plt.plot(emulator.execution_statistics.values[:,0], [200 for i in emulator.execution_statistics.values[:,0]], color = 'red',
-             linestyle = '-.', label = 'Minimum Score Target')
-    plt.grid(b = True, which = 'major', axis = 'y', linestyle = '--')
-    plt.xlabel('Episode (Trials)', fontsize = 12)
-    plt.ylabel('Reward',  fontsize = 12)
-    plt.title('Reward per Trial (' + str(number_of_trials) + ' trials)',  fontsize = 12)    
-    plt.legend(loc = 'lower right', fontsize = 12)
-    plt.ylim(bottom = min(np.amin(emulator.execution_statistics.values[:,2]) - 20, 100))
-    plt.savefig('Reward_per_Trial_' + str(number_of_trials) + '_Trials' + graphs_suffix + '.png')
-    plt.clf()
-    
-    #2. Steps per Trial
-    plt.plot(emulator.execution_statistics.values[:,0], emulator.execution_statistics.values[:,1], color = 'darkgreen',  
-             linestyle = '-', label = 'Trial Steps')
-    plt.grid(b = True, which = 'major', axis = 'y', linestyle = '--')
-    plt.xlabel('Episode (Trials)', fontsize = 12)
-    plt.ylabel('Steps',  fontsize = 12)
-    plt.title('Steps per Trial (' + str(number_of_trials) + ' trials)',  fontsize = 12)    
-    plt.savefig('Steps_per_Trial_' + str(number_of_trials) + '_Trials' + graphs_suffix + '.png')
-    plt.clf()
     
     return emulator.execution_statistics.values[-1,3]
     
@@ -329,8 +302,8 @@ def train(scenario, average_reward_episodes, rendering, hidden_layers, hidden_la
     if seed is not None:
         applySeed(seed, verbose)
     
-    #Create a rlEmulator object instance
-    emulator = rlEmulator.RLEmulator(scenario, average_reward_episodes, statistics = True, rendering = rendering, seed = seed, verbose = verbose)
+    #Create a Emulator object instance
+    emulator = em.Emulator(scenario, average_reward_episodes, statistics = True, rendering = rendering, seed = seed, verbose = verbose)
     
     #Create a Deep Neural Network object instance (Keras with Tensor Flow backend)
     dnn = deepNeuralNetwork.DeepNeuralNetwork(inputs = emulator.state_size, outputs = emulator.actions_number, hidden_layers = hidden_layers, 
@@ -415,16 +388,6 @@ def train(scenario, average_reward_episodes, rendering, hidden_layers, hidden_la
     plt.savefig('Total_Reward_Per_Training_Episode' + graphs_suffix + '.png')
     plt.clf()
     
-    if converge_criteria is not None:
-        #3. Convergence Counter per Episode
-        plt.plot(emulator.execution_statistics.values[:,0], episodes_convergence_counter, color = 'coral',  linestyle = '-')
-        plt.grid(b = True, which = 'major', axis = 'y', linestyle = '--')
-        plt.xlabel('Episode', fontsize = 12)
-        plt.ylabel('Convergence Counter',  fontsize = 12)
-        plt.title('Convergence Counter per Episode',  fontsize = 12)    
-        plt.savefig('Convergence_Counter_per_Episode' + graphs_suffix + '.png')
-        plt.clf()
-    
     #Save the trained model
     dnn.saveModel(model_file_name)
     
@@ -433,14 +396,14 @@ def train(scenario, average_reward_episodes, rendering, hidden_layers, hidden_la
     
      
 if __name__ == '__main__':
-    
+
     # Parse input arguments
     description_message = 'Lunar Lander with DQN'
     
     args_parser = argparse.ArgumentParser(description = description_message,
                 formatter_class=argparse.RawTextHelpFormatter)
     
-    args_parser.add_argument('-v', action = 'store', help = 'verbose level (0: None, 1: INFO, 2: DEBUG)', choices = (0, 1, 2,))
+    args_parser.add_argument('-v', action = 'store', help = 'verbose level (0: None, 1: INFO, 2: DEBUG)', choices = ('0', '1', '2'))
     args_parser.add_argument('-e', action = 'store', required = True, help = 'execute (train, test)', choices = ('train', 'test'))
     args_parser.add_argument('-a', action = 'store', required = False, help = 'trained agent file')
         
@@ -450,7 +413,7 @@ if __name__ == '__main__':
         args_parser.error('When executing \'test\', the trained agent file (-a) is required.')
     
     # Verbose level (0: None, 1: INFO, 2: DEBUG) 
-    verbose = C_VERBOSE_NONE if args.v is None else args.v
+    verbose = C_VERBOSE_NONE if args.v is None else int(args.v)
     
     # Trigger the requested execution type 
     if args.e == 'train':
@@ -469,7 +432,7 @@ if __name__ == '__main__':
         if verbose:
             print('\nTest once the trained DQN agent.')
         
-        trial(model_file_name = 'DQN_Trained.h5', scenario = 'LunarLander-v2', number_of_trials = 1, rendering = True, 
+        trial(model_file_name = args.a, scenario = 'LunarLander-v2', number_of_trials = 1, rendering = True, 
             graphs_suffix = '', verbose = verbose)
         
     

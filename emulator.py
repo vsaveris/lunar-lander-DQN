@@ -150,7 +150,7 @@ class Emulator():
         try:
             self.__environment = gym.make(scenario)
         except:
-            print('ERROR: class RLEmulator, \'', scenario, '\' is not a valid Open AI Gym scenario, script exits.', sep = '')
+            print('ERROR: class Emulator, \'', scenario, '\' is not a valid Open AI Gym scenario, script exits.', sep = '')
             exit(-1) 
             
         #Seed the environment
